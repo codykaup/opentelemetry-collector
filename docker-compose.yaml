@@ -1,0 +1,56 @@
+services:
+  # OTEL Collector
+  otel-collector:
+    image: otel/opentelemetry-collector:0.67.0
+    restart: always
+    command: ['--config=/etc/otel-collector-config.yaml']
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - '4317:4317' # OTLP gRPC
+      - '4318:4318' # OTLP HTTP
+      - '8888:8888' # Prometheus metrics
+      - '8889:8889' # Prometheus exporter metrics
+      - '1888:1888' # pprof
+      - '13133:13133' # health_check
+      - '55679:55679' # zpages
+    depends_on:
+      - jaeger-all-in-one
+      - prometheus
+      - loki
+      - grafana
+
+  # Jaeger for tracing
+  jaeger-all-in-one:
+    image: jaegertracing/all-in-one:latest
+    restart: always
+    ports:
+      - '16686:16686'
+      - '14268'
+      - '14250'
+
+  # Prometheus for metrics
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:latest
+    restart: always
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yml
+    ports:
+      - '9090:9090'
+
+  # Logs
+  loki:
+    container_name: loki
+    image: grafana/loki:latest
+    restart: always
+    ports:
+      - '3100:3100'
+
+  # Metric/Log Visualization
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:latest
+    restart: always
+    ports:
+      - '3111:3000'
